@@ -1,0 +1,17 @@
+pandas>=2.2.3
+numpy>=2.1.0
+scikit-learn>=1.5.2
+catboost>=1.2.7
+sktime>=0.34.0
+tsfeatures>=0.4.0
+matplotlib>=3.9.2
+seaborn>=0.13.2
+scipy>=1.14.1
+jupyter>=1.1.1
+joblib>=1.4.2
+plotly>=5.24.0
+ipywidgets>=8.1.0
+pmdarima>=2.0.0
+statsmodels>=0.14.0
+statsforecast>=1.5.0
+numba>=0.57.0
