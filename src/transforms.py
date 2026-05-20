@@ -12,15 +12,15 @@ class TimeSeriesTransformer:
         
         self.val_min = None
         self.val_max = None
-        self.is_constant = False # флагируем константный ряд (вдруг такой есть, а че бы и нет)
+        self.is_constant = False # flag the constant series
 
     def fit(self, series):
         series = np.array(series, dtype=float)
 
         if np.any(series <= 0):
-            raise ValueError("Box-Cox требует строго положительных значений") # с М4 такого нет + мы провели предочистку
+            raise ValueError("Box-Cox требует строго положительных значений")
         
-        # Если все значения равны первому, ряд константный
+        # If all values ​​are equal to the first, the series is constant
         if np.allclose(series, series[0]):
             self.is_constant = True
             self.last_val = series[0]
@@ -34,13 +34,13 @@ class TimeSeriesTransformer:
 
             transformed = boxcox(series, lmbda=self.lambda_)
             
-            # Параметры скейлинга
+            # Scaling params
             self.mean = np.mean(transformed)
             self.std = np.std(transformed)
             if self.std < 1e-9: 
                 self.std = 1.0
                 
-            # Робастный расчет области допустимых через квантили (защита от выбросов в трейне)
+            # Robust calculation of the feasible region via quantiles (protection against outliers in the train)
             q01 = np.quantile(transformed, 0.01)
             q99 = np.quantile(transformed, 0.99)
             margin = (q99 - q01) * 0.5
@@ -54,7 +54,7 @@ class TimeSeriesTransformer:
         series = np.array(series, dtype=float)
         self.last_val = series[-1]
         
-        # Если ряд константный, нет смысла его трансформировать
+        # If the series is constant, there is no point in transforming it
         if self.is_constant or self.method == 'none':
             return series
             
@@ -72,7 +72,7 @@ class TimeSeriesTransformer:
     def inverse_transform(self, preds):
         preds = np.array(preds, dtype=float)
         
-        # Если ряд был константным, жеско возвращаем эту константу
+        # If the series was constant, hard-return this constant
         if self.is_constant:
             return np.full_like(preds, self.last_val)
             
@@ -83,10 +83,10 @@ class TimeSeriesTransformer:
         elif self.method == 'boxcox':
             val_unscaled = preds * self.std + self.mean
             
-            # Робастный клиппинг по границам квантилей
+            # Robust clipping at quantile boundaries
             val_clipped = np.clip(val_unscaled, self.val_min, self.val_max)
             
-            # Математическая граница Бокса-Кокса (защита от получения отрицательных значений под корнем)
+            # Box-Cox Bound (protection against negative values ​​under the root)
             eps = 1e-8
             if abs(self.lambda_) > eps:
                 boundary = -1.0 / self.lambda_
@@ -95,10 +95,10 @@ class TimeSeriesTransformer:
                 else:
                     val_clipped = np.minimum(val_clipped, boundary - eps)
             
-            # Инверсия
+            # Inversion
             res = inv_boxcox(val_clipped, self.lambda_)
             
-            # Последний рубеж защиты от NaN (если совсем плохо получится - возвращаем наивный прогноз)
+            # The last line of defense against NaN (if things go really wrong, we return the naive forecast)
             return np.nan_to_num(res, nan=self.last_val, posinf=self.last_val, neginf=self.last_val)
             
         elif self.method == 'diff':

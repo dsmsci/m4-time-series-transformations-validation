@@ -1,21 +1,17 @@
-# Виртуальное окружение
 venv/
 env/
 .env
+models/
 
-# Кэш Python и служебные файлы
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Jupyter Notebook мусор
 .ipynb_checkpoints/
 
-# IDE и редакторы (VS Code, PyCharm)
 .vscode/
 .idea/
 
-# Системные файлы (Mac/Windows)
 .DS_Store
 Thumbs.db
 catboost_info

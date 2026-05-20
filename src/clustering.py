@@ -5,14 +5,14 @@ from sklearn.preprocessing import QuantileTransformer
 from sklearn.metrics import silhouette_score
 
 class TimeSeriesClustering:
-    # Топ признаки для кластеризации
+    # ТTop cluster feats
     M4_CORE_FEATURES = [
-        'trend', # Сила тренда
+        'trend', # Trend power
         'entropy',
-        'nonlinearity', # Нелинейность
-        'stability', # Стабильность
-        'lumpiness', # Всплески
-        'hurst' # Память (долгосрочная)
+        'nonlinearity',
+        'stability',
+        'lumpiness',
+        'hurst' # long-term memory
     ]
 
     @staticmethod
@@ -31,7 +31,7 @@ class TimeSeriesClustering:
             found = [c for c in features.columns if imp in c]
             if found: selected_cols.append(found[0])
             
-        # Квантильное преобразование с гауссом - оптимально подобрал исходя из скудной кластеризации
+        # Haussian QuantileTransformer
         qt = QuantileTransformer(output_distribution='normal', random_state=42)
         scaled_features = qt.fit_transform(features[selected_cols])
         
@@ -40,7 +40,7 @@ class TimeSeriesClustering:
     @staticmethod
     def calculate_cluster_metrics(scaled_features, max_k=10):
         """
-        Для иерархической кластеризации считаем силуэт.
+        Silhouette score form aglomerative clustering
         """
         k_values = range(2, max_k + 1)
         silhouette_scores = []

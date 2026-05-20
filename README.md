@@ -1,54 +1,53 @@
-# Прогнозирование временных рядов: Влияние трансформаций таргета
+# Time Series Forecasting: Impact of Target Transformations
 
-Данный репозиторий содержит ML-пайплайн для проверки гипотезы: **«Различные типы временных рядов (кластеры) требуют применения различных преобразований (Log1p, Box-Cox, Diff) для достижения наилучшего качества прогноза».**
+This repository contains an ML pipeline for testing the hypothesis: **"Different types of time series (clusters) require different transformations (Log1p, Box-Cox, Diff) to achieve the best forecast quality."**
 
-## Структура репозитория
+## Repository structure
 
 ```text
-├── README.md                 # Описание проекта, структура и инструкции по запуску
-├── requirements.txt          # Версии зависимостей (для 3.13 версии python)
-├── config.py                 # Глобальные гиперпараметры (горизонт, окно, сезонность, кол-во кластеров, пути директорий)
-├── run_experiment.py         # Запуск всего пайплайна
+├── README.md                 # Project description, structure and launch instructions.
+├── requirements.txt          # Dependency versions (for Python 3.13)
+├── config.py                 # Global hyperparameters (horizon, window, seasonality, number of clusters, directory paths)
+├── Thesis Report.pdf          # Article-like report on the topic (in English)
+├── run_experiment.py         # Launching the entire pipeline
 │
-├── data/                     # Директория для данных и артефактов
-│   ├── models/               # Сохраненные веса обученных моделей (.joblib)
-│   └── m4_daily_ataset.tsf      # Исходный датасет (добавляется пользователем)
+├── data/                     # Directory for data and artifacts
+│   └── m4_daily_ataset.tsf   # Initial dataset
 │
-├── results/                  # Артефакты экспериментов
-│   ├── metrics.csv           # Итоговая таблица с метриками (sMAPE, MASE) по всем фолдам и моделям
-│   └── analysis_results.ipynb           # Jupyter Notebook: EDA, обоснование параметров, визуализация метрик
+├── results/                  # Experimental artifacts
+│   ├── metrics.csv           # Summary table with metrics (sMAPE, MASE) for all folds and models
+│   └── analysis_results.ipynb  # Jupyter Notebook: EDA, Parameter Justification, Metric Visualization (logs and plots in Russian)
 │
-└── src/                      # Исходный код модулей
-    ├── data.py               # Загрузка и предобработка датасета
-    ├── eda.py                # Разведочный анализ (тесты на стационарность, STL, (P)ACF)
-    ├── clustering.py         # Извлечение статистических признаков (tsfeatures) и кластеризация
-    ├── transforms.py         # Трансформеры таргета с инверсией (Log1p, Box-Cox, Diff, None)
-    ├── baselines.py          # Обертки для статистических моделей sktime (ETS, Theta, Naive, ARIMA)
-    ├── models.py             # Глобальная модель CatBoost (MIMO) с Early Stopping по времени
-    ├── validation.py         # Протокол Walk-Forward валидации (с исключением утечки данных)
-    └── metrics.py            # Расчет метрик (MASE, sMAPE, RMSE)
+└── src/                      # Module source code
+    ├── data.py               # Loading and preprocessing the dataset
+    ├── eda.py                # Exploratory analysis (stationarity tests, STL, (P)ACF)
+    ├── clustering.py         # Statistical feature extraction and clustering
+    ├── transforms.py         # Target transformers with inversion (Log1p, Box-Cox, Diff, None)
+    ├── baselines.py          # Wrappers for statistical models sktime (ETS, Theta, Naive, ARIMA)
+    ├── models.py             # Global CatBoost (MIMO) model with Early Stopping over time
+    ├── validation.py         # Walk-Forward Validation Protocol (with Data Leakage Elimination)
+    └── metrics.py            # Calculation of metrics (MASE, sMAPE, RMSE)
 ```
 
-## Ключевые архитектурные решения
+## Key architectural decisions
 
-1. **Защита от Data Leakage:** Использована строгая Walk-Forward кросс-валидация (`TimeSeriesSplit`). Трансформеры оценивают параметры исключительно на тренировочной выборке каждого фолда.
-2. **Глобальная MIMO-архитектура:** Для ML-подхода используется `CatBoost` с `MultiRMSE` лоссом для одновременного прогнозирования всего вектора горизонта (MIMO), избегая накопления ошибки, переобучения и несогласованности шагов прогнозирования (как в Direct стратегии).
+1. Data Leakage Protection: Strict Walk-Forward cross-validation (`TimeSeriesSplit`) is used. Transformers estimate parameters exclusively on the training set of each fold.
+2. Global MIMO Architecture: The ML approach uses `CatBoost` with `MultiRMSE` loss to simultaneously predict the entire horizon vector (MIMO), avoiding error accumulation, overfitting, and inconsistency between prediction steps (as in the Direct strategy).
 
-## Запуск пайплайна
+## Launching the pipeline
 
-### Подготовка данных
+### Data preparation
+ You need to download the M4 dataset from https://forecastingdata.org/ or Kaggle.   
+ Or use the `m4_daily_ataset.tsf` (obtained from https://forecastingdata.org/).
 
-1. Необходимо скачать датасет M4 с https://forecastingdata.org/ или Kaggle.    
-2. Альтернативно можно использовать уже скачанный датасет в формате tsf (рекомендуется).    
+### Running an experiment
+You need to run the run_experiments.py script. 
 
-### Запуск эксперимента
-Необходимо запустить скрипт run_experiments.py.  
+According to the script: 
+* Rows will be cleaned and divided into clusters (data, clustering modules).
+* Walk-Forward validation will run (baselines, validation, transforms, models, metrics modules).
+* Trained CatBoost weights will be saved to the `data/models/` folder.
+* Final metrics will be exported to `results/metrics.csv`.
 
-По скрипту:     
-* Ряды пройдут очистку и разобьются на кластеры (модули data, clustering).
-* Запустится Walk-Forward валидация (модули baselines, validation, transformns, models, metrics)
-* Обученные веса CatBoost сохранятся в папку `data/models/`.
-* Финальные метрики выгрузятся в `results/metrics.csv`.
-
-### Анализ и визуализация
-Для оценки обученных моделей и хода исследования необходимо открыть ноутбук analysis_results.ipynb
+### Analysis and Visualization
+To evaluate trained models and the progress of the study, open the analysis_results.ipynb notebook.

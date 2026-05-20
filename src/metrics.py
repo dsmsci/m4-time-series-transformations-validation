@@ -2,7 +2,7 @@ import numpy as np
 
 def smape(y_true, y_pred, epsilon=1e-6):
     """
-    Модифицированный sMAPE.
+    Modified sMAPE.
     """
     y_true, y_pred = np.array(y_true), np.array(y_pred)
     sum_abs = np.abs(y_true) + np.abs(y_pred)
@@ -13,16 +13,16 @@ def smape(y_true, y_pred, epsilon=1e-6):
 
 def mase(y_true, y_pred, y_train, seasonality=1):
     """
-    MASE с наивным сезонным прогнозом.
+    MASE with Naive Seasonal forecast.
     """
     forecast_error = np.mean(np.abs(y_true - y_pred))
     if len(y_train) > seasonality:
         naive_error = np.mean(np.abs(y_train[seasonality:] - y_train[:-seasonality]))
     else:
-        # Если ряд слишком короткий, используем лаг 1
+        # If the series are too short, uses lag 1
         naive_error = np.mean(np.abs(y_train[1:] - y_train[:-1]))
         
-    if naive_error < 1e-6: # Если наивная ошибка слишком маленькая, тогда np.nan
+    if naive_error < 1e-6: # If the naive error is too small -> np.nan
         return np.nan
         
     return forecast_error / naive_error

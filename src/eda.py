@@ -10,11 +10,11 @@ from plotly.subplots import make_subplots
 from statsmodels.tsa.stattools import acf, pacf
 
 class TimeSeriesEDA:
-    @staticmethod # вызываем методы напрямую от имени класса, а не как класс, поэтому staticmethod и classmethod
+    @staticmethod
     def check_stationarity(series, signif=0.05):
         """
-        Проверка на стационарность ADF и KPSS.
-        Возвращаем (is_adf_stationary, is_kpss_stationary).
+        ADF and KPSS Stationarity Test.
+        Returns (is_adf_stationary, is_kpss_stationary).
         """
         try:
             adf_res = adfuller(series.dropna(), autolag='AIC')
@@ -23,7 +23,7 @@ class TimeSeriesEDA:
             is_adf_stat = False
 
         try:
-            # Глушим варнинги от KPSS про интерполяцию
+            # Silencing KPSS warnings about interpolation
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 kpss_res = kpss(series.dropna(), regression='c', nlags="auto")
@@ -35,13 +35,15 @@ class TimeSeriesEDA:
 
     @staticmethod
     def extract_stl_features(series, period):
-        """STL-декомпозиция ряда."""
+        """
+        STL decomp.
+        """
         stl = STL(series, period=period, robust=True).fit()
         var_resid = np.var(stl.resid)
         var_trend = np.var(stl.trend + stl.resid)
         var_season = np.var(stl.seasonal + stl.resid)
         
-        # Нормированная сила тренда и сезонности
+        # Normalized strength of trend and seasonality
         strength_trend = max(0, 1 - var_resid / var_trend) if var_trend > 0 else 0
         strength_season = max(0, 1 - var_resid / var_season) if var_season > 0 else 0
         
@@ -50,7 +52,7 @@ class TimeSeriesEDA:
     @staticmethod
     def plot_stl_multi(ts_ids, series_dict, period):
         """
-        Графики STL для рядов.
+        STL plots (in Russian).
         """
         fig = make_subplots(
             rows=2, cols=2,
@@ -71,7 +73,7 @@ class TimeSeriesEDA:
     @staticmethod
     def plot_corr_multi(ts_ids, series_dict, lags=40):
         """
-        Графики ACF, PACF для рядов
+        ACF, PACF plots (in Russian)
         """
         fig = make_subplots(
             rows=1, cols=2, 
@@ -94,13 +96,11 @@ class TimeSeriesEDA:
     @classmethod
     def analyze_dataset(cls, series_dict, period):
         """
-        Агрегация анализа по всем рядам.
+        Aggregation of analysis across all series.
         """
         results = []
         for ts_id, series in series_dict.items():
-            # Смотрим на стационарность обоими тестами
             adf_stat, kpss_stat = cls.check_stationarity(series)
-            # Смотрим на STL
             try:
                 trend_str, season_str = cls.extract_stl_features(series.dropna(), period)
             except ValueError:

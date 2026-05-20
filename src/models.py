@@ -8,7 +8,7 @@ class GlobalCatBoostMIMO:
         self.window_size = window_size
         self.iterations = iterations
         self.early_stopping_rounds = early_stopping_rounds
-        # Фиксируем имена колонок (CB так лучше будет оценивать фичи)
+        # Fixed column names (CB will be able to evaluate features better this way)
         self.col_names = [f"lag_{i}" for i in range(self.window_size)] + ["ts_id"]
         
         self.model = CatBoostRegressor(
@@ -34,11 +34,11 @@ class GlobalCatBoostMIMO:
         
         for ts_id, values in train_data_list:
             X_s, Y_s = self._extract_windows(values, ts_id)
-            if len(X_s) < 2: # Минимум 2 окна для сплита
+            if len(X_s) < 2: # Minimum 2 windows for split
                 continue 
                 
             split = int(len(X_s) * (1 - val_ratio))
-            # Хотя бы одно окно попадет в валидацию
+            # At least one window will be validated
             split = min(max(split, 1), len(X_s) - 1)
             
             X_train.extend(X_s[:split])
@@ -47,6 +47,7 @@ class GlobalCatBoostMIMO:
             Y_val.extend(Y_s[split:])
 
         if len(X_train) == 0:
+            # (in Russian)
             raise ValueError("Недостаточно данных для формирования окон.")
 
         if len(X_val) > 0:
@@ -65,7 +66,7 @@ class GlobalCatBoostMIMO:
     def predict(self, test_data_list):
         X_test = []
         for ts_id, values in test_data_list:
-            # Паддинг: вместо ошибки дотягиваем ряд до нужной длины - не испольузется (в validation.py такие ряды фильтруются, просто как альтернатива)
+            # Padding: instead of an error, we stretch the row to the required length - not used (in validation.py, such rows are filtered, just as an alternative)
             if len(values) < self.window_size:
                 pad_size = self.window_size - len(values)
                 window = np.pad(values, (pad_size, 0), mode='edge')

@@ -12,7 +12,7 @@ from src.validation import WalkForwardValidator
 
 warnings.filterwarnings('ignore')
 
-def main():
+def main(): # (in Russian)
     series_dict = get_m4_data(filepath=os.path.join(DATA_DIR, 'm4_daily_dataset.tsf'), n_samples=200)
 
     features_df, scaled_f = TimeSeriesClustering.extract_features(series_dict, freq=SEASONALITY)
@@ -45,7 +45,7 @@ def main():
             all_results.extend(sf_res)
             tqdm.write(f"Кластер {cluster_id} с {transform_name}. Stats: готово")
 
-    # Финальное сохранение
+    # Final saving
     pd.DataFrame(all_results).to_csv(os.path.join(RESULTS_DIR, 'metrics.csv'), index=False)
     print("\nМетрики в metrics.csv")
 

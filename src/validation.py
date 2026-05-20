@@ -15,7 +15,7 @@ class WalkForwardValidator:
 
     def _get_fold_indices(self, series_length, fold):
         """
-        Возвращаем индексы train и test с конца ряда.
+        Returns the train and test indices from the end of the series.
         """
         steps_from_end = self.n_splits - fold
         test_start = series_length - steps_from_end * self.horizon
@@ -31,7 +31,7 @@ class WalkForwardValidator:
     def cross_val_local_statsforecast(self, cluster_id, ts_list, models, transform_name):
         all_fold_results = []
         
-        for fold in tqdm(range(self.n_splits), desc=f"Фолды Stats", leave=False): # на этапе рана эксперимента
+        for fold in tqdm(range(self.n_splits), desc=f"Фолды Stats", leave=False): # at the early stage of the experiment
             train_dfs = []
             test_data_map = {}
             transformers_map = {}
@@ -64,15 +64,14 @@ class WalkForwardValidator:
 
             df_long = pd.concat(train_dfs, ignore_index=True)
 
-            # Запускаем модели под лонг формат данных
+            # Launches models for the long data format
             sf = StatsForecast(models=models, freq='D', n_jobs=-1)
             
             sf.fit(df=df_long)
             
             forecasts_df = sf.predict(h=self.horizon).reset_index()
 
-            # Извлекаем параметры автомоделей
-            # c этим извлечением мне помог ChatGPT, я ему отправил что было до через model_, сорян, но тут я уже поплыл
+            # Extracting parameters of car models
             fitted_models = sf.fitted_ 
             uids = sf.uids 
             
@@ -86,14 +85,14 @@ class WalkForwardValidator:
                             m_info = model_obj.model_
                             if isinstance(m_info, dict):
                                 if m_name == 'AutoETS':
-                                    # Достаем строку вида ETS(A,N,N)
+                                    # ETS(A,N,N) string
                                     p_str = m_info.get('method', 'ETS') 
                                 elif m_name == 'AutoARIMA':
-                                    # Достаем кортеж параметров (p,d,q,P,D,Q,m)
+                                    # (p,d,q,P,D,Q,m) string
                                     arma = m_info.get('arma', '')
                                     p_str = f"ARIMA{arma}" if arma else "ARIMA"
                                 elif m_name == 'AutoTheta':
-                                    # Достаем тип модели
+                                    # Model type string
                                     p_str = m_info.get('modeltype', 'Theta')
                                 else:
                                     p_str = "fitted"
@@ -106,7 +105,7 @@ class WalkForwardValidator:
                         
                     params_map[uid][m_name] = p_str
 
-            # Обратное преобразование и сохранение модели
+            # Inverse transformation and saving the model
             model_names = [type(m).__name__ for m in models]
             for ts_id in forecasts_df['unique_id'].unique():
                 ts_forecasts = forecasts_df[forecasts_df['unique_id'] == ts_id]
@@ -117,7 +116,7 @@ class WalkForwardValidator:
                     preds_tf = ts_forecasts[m_name].values
                     preds_orig = transformer.inverse_transform(preds_tf)
                     
-                    # Для MASE нужен исходный трейн
+                    # MASE requires a source train
                     y_train_orig = next(s for i, s in ts_list if i == ts_id).iloc[:len(y_true)*-1].values
                     
                     metrics = calculate_all_metrics(y_true, preds_orig, y_train_orig, self.seasonality)
@@ -133,7 +132,7 @@ class WalkForwardValidator:
     
     def cross_val_global_with_model(self, cluster_id, ts_list, transform_name):
         """
-        Валидация глобального CatBoost.
+        Validation of global CatBoost.
         """
         fold_results = []
         last_trained_model = None
@@ -153,7 +152,7 @@ class WalkForwardValidator:
                 transformer = TimeSeriesTransformer(transform_name)
                 transformer.fit(train.values[:split_idx])
                 
-                # Добавляем кортеж (ts_id, transformed_values)
+                # Add a tuple (ts_id, transformed_values)
                 transformed_vals = transformer.transform(train.values)
                 cb_train_transformed.append((ts_id, transformed_vals))
                 
